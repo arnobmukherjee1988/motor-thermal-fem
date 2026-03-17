@@ -22,13 +22,26 @@ How to run
 
 import sys
 import os
+import tempfile
 import numpy as np
 
 # Make sure Python can find the other files in this folder
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
+# Keep plotting/cache robust in restricted environments.
+CACHE_DIR = os.path.join(tempfile.gettempdir(), "motor_fem_cache")
+os.makedirs(CACHE_DIR, exist_ok=True)
+os.environ.setdefault("MPLCONFIGDIR", CACHE_DIR)
+os.environ.setdefault("XDG_CACHE_HOME", CACHE_DIR)
+
 import matplotlib
 matplotlib.use("Agg")
+matplotlib.rcParams.update({
+    "text.usetex": True,
+    "font.family": "serif",
+    "font.serif": ["Computer Modern Roman"],
+    "axes.unicode_minus": False,
+})
 
 from mesh          import make_annulus_mesh
 from materials     import PHASE1_TAGS, get_element_properties
@@ -180,29 +193,31 @@ print("\n[8] Saving plots to {} ...".format(OUT_DIR))
 plot_mesh(
     nodes, elements, element_tags,
     title="Phase 1 -- Annulus Mesh",
-    save_path=os.path.join(OUT_DIR, "phase1_mesh.png"),
+    save_path=os.path.join(OUT_DIR, "phase1_mesh.pdf"),
 )
 
 plot_temperature(
     nodes, elements, T_h,
     title="Phase 1 -- Temperature Field",
-    save_path=os.path.join(OUT_DIR, "phase1_temperature.png"),
+    save_path=os.path.join(OUT_DIR, "phase1_temperature.pdf"),
+    element_tags=element_tags,
 )
 
 plot_heat_flux(
     nodes, elements, T_h, nodal_fx, nodal_fy,
     title="Phase 1 -- Heat Flux Field",
-    save_path=os.path.join(OUT_DIR, "phase1_heatflux.png"),
+    save_path=os.path.join(OUT_DIR, "phase1_heatflux.pdf"),
+    element_tags=element_tags,
 )
 
 plot_radial(
     nodes, T_h, T_exact_fn,
     title="Phase 1 -- Radial Temperature (FEM vs Exact)",
-    save_path=os.path.join(OUT_DIR, "phase1_radial.png"),
+    save_path=os.path.join(OUT_DIR, "phase1_radial.pdf"),
 )
 
-print("    Saved: phase1_mesh.png, phase1_temperature.png,")
-print("           phase1_heatflux.png, phase1_radial.png")
+print("    Saved: phase1_mesh.pdf, phase1_temperature.pdf,")
+print("           phase1_heatflux.pdf, phase1_radial.pdf")
 
 
 # =============================================================================
@@ -230,10 +245,10 @@ print("    H1 convergence rate = {:.3f}  (expected ~1.0)".format(H1_rate))
 plot_convergence(
     h_list, L2_list, H1_list,
     title="Phase 1 -- Convergence Study (P1 triangles)",
-    save_path=os.path.join(OUT_DIR, "phase1_convergence.png"),
+    save_path=os.path.join(OUT_DIR, "phase1_convergence.pdf"),
 )
 
-print("    Saved: phase1_convergence.png")
+print("    Saved: phase1_convergence.pdf")
 
 print("\n" + "=" * 60)
 print("Phase 1 complete.")

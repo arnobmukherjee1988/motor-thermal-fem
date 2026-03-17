@@ -16,9 +16,10 @@ Validated against the exact analytical solution. Convergence rates
 measured: L2 norm rate 1.925, H1 norm rate 0.983 (theoretical: 2.0 and 1.0).
 
 Phase 2 - Slotted electric motor cross-section with three material regions
-(stator iron, copper windings, air gap) and convective cooling on the
-outer surface. Includes a parametric study of peak winding temperature
-versus heat load.
+(stator iron, winding-slot effective medium, air gap), convective cooling on
+outer and inner boundaries, effective anisotropic iron conductivity, and
+temperature-dependent copper loss. Includes parametric studies of peak winding
+temperature versus heat load, convection, and slot effective conductivity.
 
 
 Files
@@ -63,4 +64,4 @@ Element type    : P1 linear triangles
 Assembly        : COO scatter-add, converted to CSR sparse matrix
 Solver          : Direct sparse LU (scipy SuperLU)
 Annulus mesh    : Structured polar O-grid
-Motor mesh      : Scattered points + scipy Delaunay triangulation
+Motor mesh      : Interface-conforming structured polar grid

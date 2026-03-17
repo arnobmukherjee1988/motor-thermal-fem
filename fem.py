@@ -34,10 +34,10 @@ def element_stiffness_and_load(x1, y1, x2, y2, x3, y3, k_e, q_e):
 
     Physics recap
     -------------
-    For steady-state heat conduction  -div(k * grad(T)) = q,
+    For steady-state heat conduction  -div(K * grad(T)) = q,
     the weak form gives these element integrals:
 
-      K_e[i,j] = k_e * Area * (b_i*b_j + c_i*c_j)   (stiffness)
+      K_e[i,j] = Area * grad(N_i)^T * K * grad(N_j)   (stiffness)
       f_e[i]   = q_e * Area / 3                       (load)
 
     where b_i, c_i are the constant shape-function gradient components:
@@ -48,7 +48,9 @@ def element_stiffness_and_load(x1, y1, x2, y2, x3, y3, k_e, q_e):
     Parameters
     ----------
     x1,y1, x2,y2, x3,y3 : coordinates of the three nodes [m]
-    k_e : thermal conductivity of this element [W/(m.K)]
+    k_e : conductivity of this element:
+          - scalar isotropic k [W/(m.K)]
+          - or 2x2 tensor K [[kxx, kxy], [kyx, kyy]]
     q_e : volumetric heat source in this element [W/m3]
 
     Returns
@@ -86,11 +88,31 @@ def element_stiffness_and_load(x1, y1, x2, y2, x3, y3, k_e, q_e):
     b = np.array([b1, b2, b3])
     c = np.array([c1, c2, c3])
 
-    # ── Local stiffness matrix: K_e = k_e * Area * (b * b^T + c * c^T) ───────
+    # ── Build conductivity tensor (supports isotropic or anisotropic k) ───────
+    if np.isscalar(k_e):
+        kxx = float(k_e)
+        kxy = 0.0
+        kyx = 0.0
+        kyy = float(k_e)
+    else:
+        k_mat = np.asarray(k_e, dtype=np.float64)
+        if k_mat.shape != (2, 2):
+            raise ValueError(
+                "k_e must be scalar or shape (2,2), got {}".format(k_mat.shape)
+            )
+        kxx = k_mat[0, 0]
+        kxy = k_mat[0, 1]
+        kyx = k_mat[1, 0]
+        kyy = k_mat[1, 1]
+
+    # ── Local stiffness matrix: K_e = Area * grad(Ni)^T * K * grad(Nj) ───────
     K_e = np.zeros((3, 3))
     for i in range(3):
         for j in range(3):
-            K_e[i, j] = k_e * area * (b[i] * b[j] + c[i] * c[j])
+            K_e[i, j] = area * (
+                b[i] * (kxx * b[j] + kxy * c[j]) +
+                c[i] * (kyx * b[j] + kyy * c[j])
+            )
 
     # ── Local load vector: f_e[i] = q_e * Area / 3 ───────────────────────────
     f_e = np.zeros(3)
@@ -165,7 +187,8 @@ def assemble(nodes, elements, k_per_element, q_per_element):
     ----------
     nodes          : array (N, 2)   node coordinates
     elements       : array (Ne, 3)  element connectivity (0-based indices)
-    k_per_element  : array (Ne,)    conductivity per element [W/(m.K)]
+    k_per_element  : array (Ne,) for isotropic conductivity
+                     OR array (Ne,2,2) for tensor conductivity
     q_per_element  : array (Ne,)    heat source per element [W/m3]
 
     Returns
